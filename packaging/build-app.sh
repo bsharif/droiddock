@@ -6,6 +6,11 @@
 #   ./packaging/build-app.sh --zip        build and make dist/DroidDock-vX.Y.Z-macos.zip
 #   UNIVERSAL=1 ./packaging/build-app.sh  build for Apple Silicon and Intel
 #                                         (needs: rustup target add aarch64-apple-darwin x86_64-apple-darwin)
+#
+# Signing for other Macs (Developer ID + Apple notarisation):
+#   SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" \
+#   NOTARY_PROFILE=droiddock-notary ./packaging/build-app.sh --notarize --zip
+# Without SIGN_IDENTITY the app is signed "ad hoc": it runs on this Mac only.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -84,9 +89,52 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-echo "==> Signing (ad hoc)"
-codesign --force --deep --sign - "$APP"
+SIGN_ID="${SIGN_IDENTITY:--}"
+if [ "$SIGN_ID" = "-" ]; then
+  echo "==> Signing (ad hoc, this Mac only)"
+  codesign --force --deep --sign - "$APP"
+else
+  # Sign the inner programs first, then the app. Hardened runtime is required for notarisation.
+  echo "==> Signing with: $SIGN_ID (hardened runtime)"
+  for bin in "$APP/Contents/MacOS/droiddock-engine" "$APP/Contents/MacOS/DroidDock"; do
+    codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$bin"
+  done
+  codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$APP"
+  codesign --verify --strict --verbose=2 "$APP"
+fi
 echo "==> Architectures: $(lipo -archs "$APP/Contents/MacOS/DroidDock")"
+
+# Send the app to Apple, wait for approval, and attach ("staple") the ticket to the app.
+# Credentials: NOTARY_PROFILE (made with `xcrun notarytool store-credentials`), or
+# APPLE_ID + APPLE_TEAM_ID + APPLE_APP_PASSWORD (used in GitHub Actions).
+notarize() {
+  if [ "$SIGN_ID" = "-" ]; then
+    echo "error: --notarize needs SIGN_IDENTITY set to a 'Developer ID Application' certificate" >&2
+    exit 1
+  fi
+  local zip=build/notarize.zip
+  rm -f "$zip"
+  ditto -c -k --keepParent "$APP" "$zip"
+  echo "==> Notarising (this can take a few minutes)"
+  local out
+  if [ -n "${NOTARY_PROFILE:-}" ]; then
+    out=$(xcrun notarytool submit "$zip" --keychain-profile "$NOTARY_PROFILE" --wait 2>&1) || true
+  else
+    out=$(xcrun notarytool submit "$zip" --apple-id "${APPLE_ID:?}" --team-id "${APPLE_TEAM_ID:?}" \
+          --password "${APPLE_APP_PASSWORD:?}" --wait 2>&1) || true
+  fi
+  echo "$out"
+  if ! grep -q "status: Accepted" <<<"$out"; then
+    echo "error: Apple did not accept the app. Run: xcrun notarytool log <submission id>" >&2
+    exit 1
+  fi
+  xcrun stapler staple "$APP"
+  spctl --assess --type execute --verbose=2 "$APP"
+  rm -f "$zip"
+}
+
+# Notarise before any zip or install, so they get the stapled app.
+for arg in "$@"; do [ "$arg" = "--notarize" ] && notarize; done
 
 for arg in "$@"; do
   case "$arg" in

@@ -24,6 +24,7 @@ First public release.
   an **Unencrypted** label, and a **Turn Off** button.
 - Settings: save folder, phone picker at startup, photo thumbnails.
 - Menu commands and keyboard shortcuts.
+- Universal app (Apple Silicon and Intel), signed with a Developer ID and notarised by Apple.
 
 [Unreleased]: https://github.com/bsharif/droiddock/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/bsharif/droiddock/releases/tag/v0.1.0

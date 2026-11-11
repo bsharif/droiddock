@@ -52,14 +52,10 @@ Debug Bridge) instead. adb is fast and reliable, and it also works over Wi-Fi.
 2. Download `DroidDock-vX.Y.Z-macos.zip` from the
    [latest release](https://github.com/bsharif/droiddock/releases/latest).
 3. Unzip it, and move **DroidDock.app** to your Applications folder.
-4. The app is not notarised by Apple. The first time, macOS blocks it. To open it:
-   - Open DroidDock one time, and close the warning.
-   - Open **System Settings › Privacy & Security**, and click **Open Anyway** next to DroidDock.
+4. Open it. Releases are signed with a Developer ID and notarised by Apple, so macOS opens
+   them normally.
 
-   Or, in Terminal:
-   ```bash
-   xattr -dr com.apple.quarantine /Applications/DroidDock.app
-   ```
+If you build DroidDock yourself, your build is signed for your Mac only.
 
 **Needs:** macOS 14 Sonoma or later, on Apple Silicon or Intel.
 
@@ -155,9 +151,33 @@ Documents, Desktop and Downloads (macOS privacy protection blocks those for the 
 ## Versions
 
 DroidDock uses [Semantic Versioning](https://semver.org). Changes are in
-[CHANGELOG.md](CHANGELOG.md). To make a release, change `version` in `Cargo.toml`, add a
-CHANGELOG entry, then push a tag such as `v0.2.0`. GitHub Actions builds the app and publishes
-the release.
+[CHANGELOG.md](CHANGELOG.md).
+
+## Releasing
+
+1. Change `version` in `Cargo.toml`, and add a CHANGELOG entry.
+2. Commit, then push a tag such as `v0.2.0`.
+3. The [Release workflow](.github/workflows/release.yml) builds a universal app, signs it with
+   the Developer ID, sends it to Apple for notarisation, and publishes the GitHub release with
+   the zip and its SHA-256 checksum. It stops if a signing secret is missing.
+
+Repository secrets for the Release workflow:
+
+| Secret | Value |
+|---|---|
+| `MACOS_CERT_P12` | The "Developer ID Application" certificate and private key, exported as `.p12`, in base64 |
+| `MACOS_CERT_PASSWORD` | The password of that `.p12` |
+| `APPLE_ID` | The Apple ID email of the developer account |
+| `APPLE_TEAM_ID` | The 10-character team ID |
+| `APPLE_APP_PASSWORD` | An app-specific password from appleid.apple.com |
+
+To sign and notarise on your own Mac instead:
+
+```bash
+xcrun notarytool store-credentials droiddock-notary --apple-id YOUR_APPLE_ID --team-id YOUR_TEAM_ID
+SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" NOTARY_PROFILE=droiddock-notary \
+  ./packaging/build-app.sh --notarize --zip
+```
 
 ## Licence
 
