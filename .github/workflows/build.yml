@@ -1,0 +1,29 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust targets
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Build universal app
+        run: UNIVERSAL=1 ./packaging/build-app.sh --zip
+
+      - name: Check engine
+        run: dist/DroidDock.app/Contents/MacOS/droiddock-engine version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DroidDock-macos
+          path: dist/DroidDock-*.zip*

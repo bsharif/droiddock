@@ -1,0 +1,56 @@
+name: Release
+
+# Push a tag like v0.2.0 to build the app and publish a GitHub release.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tag matches Cargo.toml version
+        run: |
+          v=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
+          if [ "v$v" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match Cargo.toml version $v" >&2
+            exit 1
+          fi
+
+      - name: Rust targets
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Build universal app
+        run: UNIVERSAL=1 ./packaging/build-app.sh --zip
+
+      - name: Release notes from CHANGELOG
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          awk -v v="$v" '
+            $0 ~ "^## \\[" v "\\]" { on = 1; next }
+            on && /^## \[/ { exit }
+            on && /^\[.*\]: / { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          cat >> notes.md <<'EOF'
+
+          ### Install
+          1. `brew install android-platform-tools`
+          2. Unzip, and move **DroidDock.app** to Applications.
+          3. The app is not notarised. The first time, open **System Settings › Privacy & Security** and click **Open Anyway**, or run `xattr -dr com.apple.quarantine /Applications/DroidDock.app`.
+
+          Universal app: Apple Silicon and Intel, macOS 14 or later.
+          EOF
+          cat notes.md
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/DroidDock-*.zip dist/DroidDock-*.zip.sha256 \
+            --title "DroidDock $GITHUB_REF_NAME" --notes-file notes.md
