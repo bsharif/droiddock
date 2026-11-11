@@ -52,10 +52,18 @@ Debug Bridge) instead. adb is fast and reliable, and it also works over Wi-Fi.
 2. Download `DroidDock-vX.Y.Z-macos.zip` from the
    [latest release](https://github.com/bsharif/droiddock/releases/latest).
 3. Unzip it, and move **DroidDock.app** to your Applications folder.
-4. Open it. Releases are signed with a Developer ID and notarised by Apple, so macOS opens
-   them normally.
+4. Open it. The release notes say if a release is notarised by Apple.
+   **v0.1.0 is not notarised yet**, so macOS blocks it the first time. To open it:
+   - Open DroidDock one time, and close the warning.
+   - Open **System Settings › Privacy & Security**, and click **Open Anyway** next to DroidDock.
 
-If you build DroidDock yourself, your build is signed for your Mac only.
+   Or, in Terminal:
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/DroidDock.app
+   ```
+
+To check the download, put the `.sha256` file next to the zip and run
+`shasum -a 256 -c DroidDock-v0.1.0-macos.zip.sha256`.
 
 **Needs:** macOS 14 Sonoma or later, on Apple Silicon or Intel.
 
@@ -157,11 +165,13 @@ DroidDock uses [Semantic Versioning](https://semver.org). Changes are in
 
 1. Change `version` in `Cargo.toml`, and add a CHANGELOG entry.
 2. Commit, then push a tag such as `v0.2.0`.
-3. The [Release workflow](.github/workflows/release.yml) builds a universal app, signs it with
-   the Developer ID, sends it to Apple for notarisation, and publishes the GitHub release with
-   the zip and its SHA-256 checksum. It stops if a signing secret is missing.
+3. The [Release workflow](.github/workflows/release.yml) builds a universal app and publishes
+   the GitHub release with the zip and its SHA-256 checksum. When all five secrets below are
+   set, it also signs the app with the Developer ID and sends it to Apple for notarisation.
+   When a secret is missing, it makes an unsigned release, and the release notes say how to
+   open it.
 
-Repository secrets for the Release workflow:
+Repository secrets for signed releases:
 
 | Secret | Value |
 |---|---|
