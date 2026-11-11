@@ -6,6 +6,17 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-11
+
+### Fixed
+- The phone picker now opens as soon as the phone list is ready at startup. Before, it
+  waited until the first folder finished loading, which took several seconds for a large
+  Camera folder over Wi-Fi.
+
+### Changed
+- The demo engine has an optional `DEMO_LS_DELAY` to act like a slow phone folder.
+- This release is not notarised; see the install steps.
+
 ## [0.1.0] - 2026-11-11
 
 First public release.
@@ -27,5 +38,6 @@ First public release.
 - Universal app (Apple Silicon and Intel). This release is not notarised; see the install steps.
 - Release workflow that signs and notarises the app when Developer ID secrets are set.
 
-[Unreleased]: https://github.com/bsharif/droiddock/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/bsharif/droiddock/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/bsharif/droiddock/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/bsharif/droiddock/releases/tag/v0.1.0

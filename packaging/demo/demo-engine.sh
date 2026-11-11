@@ -14,6 +14,7 @@ case "$1" in
   mdns)
     echo '{"items":[{"name":"adb-T9QZ77777-x9y8z7","kind":"connect","addr":"192.168.1.52:37415"}]}' ;;
   ls)
+    sleep "${DEMO_LS_DELAY:-0}" # set to act like a slow phone folder (for timing tests)
     case "$3" in
       */Camera)
         items=""

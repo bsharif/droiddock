@@ -53,7 +53,7 @@ Debug Bridge) instead. adb is fast and reliable, and it also works over Wi-Fi.
    [latest release](https://github.com/bsharif/droiddock/releases/latest).
 3. Unzip it, and move **DroidDock.app** to your Applications folder.
 4. Open it. The release notes say if a release is notarised by Apple.
-   **v0.1.0 is not notarised yet**, so macOS blocks it the first time. To open it:
+   **Releases are not notarised yet**, so macOS blocks them the first time. To open one:
    - Open DroidDock one time, and close the warning.
    - Open **System Settings › Privacy & Security**, and click **Open Anyway** next to DroidDock.
 
@@ -63,7 +63,7 @@ Debug Bridge) instead. adb is fast and reliable, and it also works over Wi-Fi.
    ```
 
 To check the download, put the `.sha256` file next to the zip and run
-`shasum -a 256 -c DroidDock-v0.1.0-macos.zip.sha256`.
+`shasum -a 256 -c DroidDock-vX.Y.Z-macos.zip.sha256` (with the version that you downloaded).
 
 **Needs:** macOS 14 Sonoma or later, on Apple Silicon or Intel.
 

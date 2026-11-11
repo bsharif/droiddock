@@ -88,7 +88,7 @@ final class AppModel: ObservableObject {
         }
         selectedSerial = UserDefaults.standard.string(forKey: Defaults.lastSerial)
         Task {
-            await refreshDevices() // this also loads the folder when it finds a phone
+            await refreshDevices() // this also starts the folder load when it finds a phone
             if UserDefaults.standard.bool(forKey: Defaults.pickerAtStart) || current == nil { showPhones = true }
         }
         poller = Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { _ in
@@ -104,7 +104,9 @@ final class AppModel: ObservableObject {
         devices = list.devices
         recent = list.recent
         if current == nil { autoSelect() }
-        if current?.serial != had, current != nil { await load() }
+        // Load the folder in the background, so the caller (for example the startup picker)
+        // does not wait for a large folder to finish.
+        if current?.serial != had, current != nil { Task { await self.load() } }
     }
 
     /// Keep the chosen phone; else the last one used; else a USB phone; else any ready phone.
